@@ -7,352 +7,84 @@
 
 #define debug 0
 
-typedef struct d{
-    int key;
-    int color;
-    struct d *p;
-    struct d *left;
-    struct d *right;
-}node_int;
-
 typedef struct{
-    node_int* root;
-}RB_int;
+    int index;
+    char ch_s;
+    char symb;
+}filter_element;
 
-node_int *NIL_int;
+typedef struct f{
+    filter_element * element;
+    struct f *left;
+    struct f *right;
+}filtro;
 
-void init_int(RB_int* T){
-    T->root = NIL_int;
-    T->root->p = NIL_int;
-    T->root->right = NIL_int;
-    T->root->left = NIL_int;
+typedef struct node_l {
+    char *data;
+    struct node_l *prev;
+    struct node_l *next;
+} element;
+
+typedef struct {
+    // tiene traccia di quanti nodi sono presenti all'interno della lista
+    int count;
+    // puntatore al primo nodo della lista
+    element *header;
+    // puntatore all'ultimo nodo della lista
+    element *tailer;
+} list;
+
+void init_list(list *l) {
+    l->count = 0;
+    l->header = l->tailer = NULL;
 }
 
-void left_rotate_int(RB_int* T, node_int *x){
-    node_int *y;
+void list_insert(list *l, char *new_data){
+    element *new_node;
+    new_node = malloc(sizeof(element));
 
-    y = x->right;
-    x->right = y->left;
-    if(y->left != NIL_int)
-        y->left->p = x;
+    if(strcpy(new_node->data,new_data)==NULL)
+        exit(0) ;
+    new_node->next = NULL;
+    new_node->prev = NULL;
 
-    y->p = x->p;
-    if(y->p == NIL_int)
-        T->root = y;
-    else if(x == x->p->left)
-        x->p->left = y;
-    else
-        x->p->right = y;
-
-    y->left = x;
-    x->p = y;
-}
-
-void right_rotate_int(RB_int* T, node_int *x){
-    node_int *y;
-
-    y = x->left;
-    x->left = y->right;
-    if(y->right != NIL_int)
-        y->right->p = x;
-
-    y->p = x->p;
-    if(y->p == NIL_int)
-        T->root = y;
-    else if(x == x->p->left)
-        x->p->left = y;
-    else
-        x->p->right = y;
-
-    y->right = x;
-    x->p = y;
-}
-
-void inorderWalk_int(node_int *x){
-    if(x != NIL_int){
-        inorderWalk_int(x->left);
-        printf("%c\n", x->key);
-        inorderWalk_int(x->right);
-    }
-}
-
-node_int *RBsearch_int(RB_int* T, int key){
-    node_int *x = T->root;
-
-    while(x != NIL_int && x->key != key ){
-        if(key < x->key)
-            x = x->left;
-        else
-            x = x->right;
-    }
-    return x;
-}
-
-void RBinsert_fixup_int(RB_int *T, node_int *z){
-    while(z->p->color == RED){
-
-        if(z->p == z->p->p->left){
-
-            if(z->p->p->right->color == RED){
-                z->p->color = BLACK;
-                z->p->p->right->color = BLACK;
-                z->p->p->color = RED;
-                z = z->p->p;
-            }
-
-            else{
-                if(z == z->p->right){
-                    z = z->p;
-                    left_rotate_int(T, z);
-                }
-
-                z->p->color = BLACK;
-                z->p->p->color = RED;
-                right_rotate_int(T, z->p->p);
-            }
-        }
-
-        else{
-            if(z->p->p->left->color == RED){
-                z->p->color = BLACK;
-                z->p->p->left->color = BLACK;
-                z->p->p->color = RED;
-                z = z->p->p;
-            }
-
-            else{
-                if(z == z->p->left){
-                    z = z->p;
-                    right_rotate_int(T, z);
-                }
-
-                z->p->color = BLACK;
-                z->p->p->color = RED;
-                left_rotate_int(T, z->p->p);
-            }
-        }
+    if (l->count == 0) {
+        new_node->prev = NULL;
+        l->header = l->tailer = new_node;
+    } else {
+        new_node->prev = l->tailer;
+        l->tailer->next = new_node;
+        l->tailer = new_node;
     }
 
-    T->root->color = BLACK;
+    l->count++;
 }
 
-void RBinsert_int(RB_int *T, char key){
-    node_int *z, *x, *y;
-    z = malloc(sizeof(node_int));
+void delete_node(list *l, element *n){
+    n->prev->next = n->next;
+    if (n->next != NULL)
+        n->next->prev = n->prev;
 
-    z->key = key;
-    z->color = RED;
-    z->left = NIL_int;
-    z->right = NIL_int;
-
-    x = T->root;
-    y = NIL_int;
-
-    while(x != NIL_int){
-        y = x;
-        if(z->key == x->key)     return;
-        else if(z->key < x->key)
-            x = x->left;
-        else
-            x = x->right;
-    }
-
-    if(y == NIL_int)
-        T->root = z;
-    else if(z->key <= y->key)
-        y->left = z;
-    else
-        y->right = z;
-
-    z->p = y;
-
-    RBinsert_fixup_int(T, z);
+    free(n);
+    l->count--;
 }
 
-void RBcopy_int( node_int *source, RB_int *Dest){
-    if(source != NIL_int){
+void print_list(list *l){
+    element *tmp;
+    tmp = l->header;
 
-        RBinsert_int(Dest, source->key);
-        RBcopy_int(source->left, Dest);
-        RBcopy_int(source->right, Dest);
+    for (int i = 1; i < l->count; i++){
+        printf("nodo %d: %dn", i, tmp->data);
+        tmp = tmp->next;
     }
 }
 
 typedef struct n{
-    char key;
-    int countCharR;
-    int countMatchedS;
-    RB_int *pos;
+    char key[30];
     int color;
     struct n *p;
     struct n *left;
     struct n *right;
-}node_char;
-
-typedef struct{
-    node_char* root;
-}RB_char;
-
-node_char *NIL_char;
-
-void init_char(RB_char* T){
-    T->root = NIL_char;
-    T->root->p = NIL_char;
-    T->root->right = NIL_char;
-    T->root->left = NIL_char;
-}
-
-void left_rotate_char(RB_char* T, node_char *x){
-    node_char *y;
-
-    y = x->right;
-    x->right = y->left;
-    if(y->left != NIL_char)
-        y->left->p = x;
-
-    y->p = x->p;
-    if(y->p == NIL_char)
-        T->root = y;
-    else if(x == x->p->left)
-        x->p->left = y;
-    else
-        x->p->right = y;
-
-    y->left = x;
-    x->p = y;
-}
-
-void right_rotate_char(RB_char* T, node_char *x){
-    node_char *y;
-
-    y = x->left;
-    x->left = y->right;
-    if(y->right != NIL_char)
-        y->right->p = x;
-
-    y->p = x->p;
-    if(y->p == NIL_char)
-        T->root = y;
-    else if(x == x->p->left)
-        x->p->left = y;
-    else
-        x->p->right = y;
-
-    y->right = x;
-    x->p = y;
-}
-
-void inorderWalk_char(node_char *x){
-    if(x != NIL_char){
-        inorderWalk_char(x->left);
-        printf("%c\n", x->key);
-        inorderWalk_char(x->right);
-    }
-}
-
-node_char *RBsearch_char(RB_char* T, char key){
-    node_char *x = T->root;
-
-    while(x != NIL_char && x->key != key ){
-        if(key < x->key)
-            x = x->left;
-        else
-            x = x->right;
-    }
-    return x;
-}
-
-void RBinsert_fixup_char(RB_char *T, node_char *z){
-    while(z->p->color == RED){
-
-        if(z->p == z->p->p->left){
-
-            if(z->p->p->right->color == RED){
-                z->p->color = BLACK;
-                z->p->p->right->color = BLACK;
-                z->p->p->color = RED;
-                z = z->p->p;
-            }
-
-            else{
-                if(z == z->p->right){
-                    z = z->p;
-                    left_rotate_char(T, z);
-                }
-
-                z->p->color = BLACK;
-                z->p->p->color = RED;
-                right_rotate_char(T, z->p->p);
-            }
-        }
-
-        else{
-            if(z->p->p->left->color == RED){
-                z->p->color = BLACK;
-                z->p->p->left->color = BLACK;
-                z->p->p->color = RED;
-                z = z->p->p;
-            }
-
-            else{
-                if(z == z->p->left){
-                    z = z->p;
-                    right_rotate_char(T, z);
-                }
-
-                z->p->color = BLACK;
-                z->p->p->color = RED;
-                left_rotate_char(T, z->p->p);
-            }
-        }
-    }
-
-    T->root->color = BLACK;
-}
-
-void RBinsert_char(RB_char *T, char key, RB_int *pos, int countCharR, int countMatchedS){
-    node_char *z, *x, *y;
-    z = malloc(sizeof(node_char));
-
-    z->key = key;
-    RBcopy_int(pos->root, z->pos);
-    z->countCharR = countCharR;
-    z->countMatchedS = countMatchedS;
-    z->color = RED;
-    z->left = NIL_char;
-    z->right = NIL_char;
-
-    x = T->root;
-    y = NIL_char;
-
-    while(x != NIL_char){
-        y = x;
-        if(z->key == x->key)     return;
-        else if(z->key < x->key)
-            x = x->left;
-        else
-            x = x->right;
-    }
-
-    if(y == NIL_char)
-        T->root = z;
-    else if(z->key <= y->key)
-        y->left = z;
-    else
-        y->right = z;
-
-    z->p = y;
-
-    RBinsert_fixup_char(T, z);
-}
-
-
-typedef struct m{
-    char key[30];
-    int color;
-    struct m *p;
-    struct m *left;
-    struct m *right;
 }node;
 
 typedef struct{
@@ -694,7 +426,7 @@ l'ordine dei simboli (usato per stabilire l'ordine lessicografico delle parole) 
                 }
 
                 if (/*(s[i] == x->key[i] && (countNotMatchedBeforeK >= countCharK - countMatchedK) && o[i] == '|')  ||*/
-               (countCharK != x->countCharR) || (countCharK < x->countMatchedS)){
+                        (countCharK != x->countCharR) || (countCharK < x->countMatchedS)){
                     RBdelete(filtered, x);
                     (*num_filt) = (*num_filt) - 1;
                 }
@@ -706,35 +438,75 @@ l'ordine dei simboli (usato per stabilire l'ordine lessicografico delle parole) 
 
 }
 
-void RBcopy( node *source, RB *Dest){
-    //node *z;
-    //z = malloc(sizeof(node));
 
-    if(source != NIL){
-        /*if(strcpy(z->key,source->key)==NULL)
-            exit(0) ;
-        z->color = source->color;
-        z->left = NIL;
-        z->left->p = z;
-        z->right = NIL;
-        z->right->p = z;
-        z->p = dest->p;
 
-        dest = z;
-        */
-        RBinsert(Dest, source->key);
-        RBcopy(source->left, Dest);
-        RBcopy(source->right, Dest);
+filtro *genera_filtro (char* s, char* r, int k){
+    filtro *f, *previous;
+
+    for(int i=0; i<k; i++){
+        filtro* current = malloc(sizeof(filtro));
+        filter_element *e = malloc(sizeof(filter_element));
+        e->index = i;
+        e->ch_s = s[i];
+
+        // logica per calcolare symb
+        int countCharR = 0, countMatchedS = 0, countNotMatchedBeforeS = 0;
+
+        for (int j = 0; j < k; j++) {
+            if (r[j] == s[i])
+                countCharR++;
+            if (s[j] == r[j] && s[j] == s[i]) {
+                countMatchedS++;
+            }
+            if (s[i] != r[j] && s[j] == s[i] && j < i)
+                countNotMatchedBeforeS++;
+        }
+
+        if (s[i] == r[i])
+            e->symb = '+';
+        else {
+            if (countCharR == 0 || (countNotMatchedBeforeS >= countCharR - countMatchedS))
+                e->symb ='/';
+            else
+                e->symb ='|';
+        }
+
+        current->element = e;
+        current->right = NULL;
+        current->left = NULL;
+        if(i ==0){
+            f = current;
+        } else {
+            previous->right = current;
+            current->left = previous;
+        }
+        previous = current;
+    }
+    return f;
+}
+
+void stampa_filtro(filtro *f){
+    filtro *current=f;
+    while(current->right != NULL){
+        printf("%c", current->element->symb);
+        current = current->right;
+    }
+    printf("\n");
+}
+
+RB *filtra_dic( list *l_filtered, filtro *f){
+    filtro *current=f;
+
+    while(current->right != NULL){
+
+
+        current = current->right;
     }
 }
 
-int play(RB *dic, int n, int k, int *num_words, int *found, char *r){
+int play(RB *dic, list* l_filtered, int n, int k, int *num_words, int *found, char *r){
     int i, j, flag, num_filt = (*num_words);
     char s[30], *o, temp;
-
-    RB_int *pos;
-    RB_char * symbols = malloc(sizeof(RB_char));
-    init_char(symbols);
     RB * filtered = malloc(sizeof(RB));
     init(filtered);
 
@@ -744,6 +516,8 @@ int play(RB *dic, int n, int k, int *num_words, int *found, char *r){
         inorderWalk(filtered->root);
         printf("\n");
     }
+
+
 
     while (n > 0) {
         if (fscanf(stdin, "%s", s) == 0) return -1;
@@ -768,7 +542,7 @@ int play(RB *dic, int n, int k, int *num_words, int *found, char *r){
                 if (strlen(s) != k) return -1;
 
                 RBinsert(dic, s);
-                RBinsert(filtered, s);
+                list_insert(l_filtered, s);
                 (*num_words) = (*num_words) +1;
                 num_filt = num_filt+1;
             }
@@ -800,90 +574,45 @@ int play(RB *dic, int n, int k, int *num_words, int *found, char *r){
                     fprintf(stdout, "%s", "ok\n");
                     *found = 1;
                     //break;
-                }
-                else{
-                    /*Per ogni 1 ≤ i ≤ k, si ha che
-•
-res[i] è il carattere + se l'i-esimo carattere di p è uguale all'i-esimo carattere di r
-•
-cioè se vale che p[i] = r[i], quindi p[i] è "in posizione corretta"
-•
-res[i] è il carattere / se l'i-esimo carattere di p non compare da nessuna parte in r
-•
-res[i] è il carattere | se l'i-esimo carattere di p (indicato nel seguito come p[i]) compare in r, ma non in posizione
-            i-esima; tuttavia, se in r compaiono ni istanze di p[i], se ci è il numero di istanze del carattere p[i]
-             che sono in posizione corretta (chiaramente deve valere che ci ≤ ni) e se ci sono prima del carattere i-esimo
-             in p almeno ni-ci caratteri uguali a p[i] che sono in posizione scorretta, allora res[i] deve essere / invece che |*/
-                    int countCharR = 0, countMatchedS = 0, countNotMatchedBeforeS = 0;
-                    o = malloc(k* sizeof(char));
-
-                    for (i = 0; i < k; i++) {
-                        temp = s[i];
-                        node_char *x = RBsearch_char(symbols, temp);
-                        if(x==NIL_char) {
-                            flag = 0;
-                            pos = malloc(sizeof(RB_int));
-                            init_int(pos);
-                        }
-                        else flag=1;
-
-                            for (j = 0; j < k; j++) {
-                                if (r[j] == s[i])
-                                    countCharR++;
-                                if (s[j] == r[j] && s[j] == s[i]) {
-                                    if(!flag)   RBinsert_int(pos, i);
-                                    countMatchedS++;
-                                }
-                                if (s[i] != r[j] && s[j] == s[i] && j < i)
-                                    countNotMatchedBeforeS++;
-                            }
-                        if(!flag) {
-                            RBinsert_char(symbols, temp, pos, countCharR, countMatchedS);
-                            free(pos);
-                        }
+                } else {
+                    filtro *f = genera_filtro(s, r, k);
+                    stampa_filtro(f);
 
 
-                        if (s[i] == r[i])
-                            o[i] = '+';
-                        else {
-                            if (countCharR == 0 || (countNotMatchedBeforeS >= countCharR - countMatchedS))
-                                o[i]='/';
-                            else
-                                o[i]='|';
-                        }
-                    }
-                    o[k]='\0';
-                    fprintf(stdout, "%s", o);
+
+
+
+
+
+
                     /*Inoltre, dopo ogni confronto, il programma deve stampare in output il numero di parole ammissibili ancora compatibili
  * con i vincoli appresi tranne nel caso di un confronto con esito “not_exists”*/
 
-                    //elimina parole da filtrate
-                    mod_filtrate(filtered->root, filtered, symbols, &num_filt, r, s, o, k);
-                    fprintf(stdout, "\n%d\n", num_filt);
-                    free(o);
+
                 }
             }
         }
     }
 
     free(filtered);
-    free(symbols);
     return 0;
 }
 
 int main() {
     NIL = malloc(sizeof(node));
     NIL->color = BLACK;
-    NIL_char = malloc(sizeof(node_char));
-    NIL_char->color = BLACK;
 
     int k, found=0, num_words=0;
     char s[30];
     RB * dic = malloc(sizeof(RB));
     init(dic);
 
+    list *l_filtered = malloc(sizeof(list));
+    init_list(l_filtered);
+
     //leggo k = lunghezza delle parole
     if(fscanf(stdin, "%d", &k)==0)    return -1;
+
 
     //il sistema legge una sequenza (di lunghezza arbitraria) di parole, ognuna di lunghezza k, che costituisce l'insieme delle parole ammissibili
     while(1){
@@ -893,6 +622,7 @@ int main() {
 
         RBinsert(dic, s);
         num_words ++;
+        list_insert(l_filtered, s);
     }
 
     if(num_words<1)     return -1;
@@ -916,7 +646,7 @@ int main() {
      che racchiudono tra di loro una sequenza di nuove parole da aggiungere all'insieme delle parole ammissibili*/
     while(n!=0) {
 
-        if(play(dic, n, k, &num_words, &found, r)!=0)
+        if(play(dic, l_filtered, n, k, &num_words, &found, r)!=0)
             printf("\nERRORE!");
 
         if (debug) {
@@ -930,7 +660,7 @@ int main() {
 Non ci possono essere altre parole da confrontare (ma ci potrebbe essere l'inserimento di nuove parole ammissibili)
 •
 Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
-            //una partita è stata finita
+        //una partita è stata finita
         while(1){
             if (fscanf(stdin, "%s", s) == EOF){
                 n=0;
@@ -943,7 +673,7 @@ Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
             if (strcmp(s, "+inserisci_inizio") == 0) {
                 if (debug) {
                     printf("\nNuove parole ammissibili\n");
-                 }
+                }
                 while (1) {
                     if (fscanf(stdin, "%s", s) == 0) return -1;
                     if (strcmp(s, "+inserisci_fine") == 0) break;
@@ -951,6 +681,7 @@ Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
 
                     RBinsert(dic, s);
                     num_words++;
+                    list_insert(l_filtered, s);
                 }
 
                 if (debug) {
@@ -979,6 +710,6 @@ Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
 
     free(dic);
     free(NIL);
-    free(NIL_char);
+    free(l_filtered);
     return 0;
 }
