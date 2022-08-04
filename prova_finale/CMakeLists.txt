@@ -5,4 +5,4 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(prova_finale
         main.c
-        prova.c)
+        main.c)
