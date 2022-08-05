@@ -322,6 +322,11 @@ typedef struct f{
     struct f *right;
 }filtro;
 
+void init_filtro(filtro *f) {
+    f->element = NULL;
+    f->left = f->right = NULL;
+}
+
 typedef struct node_l {
     node *data;
     struct node_l *prev;
@@ -377,20 +382,35 @@ void delete_node_l(list *l, element *n){
     l->count--;
 }
 
-void print_list(list *l){
-    element *tmp;
-    tmp = l->header;
+void RBcopy( node *source, RB *Dest, list *l){
+    //node *z;
+    //z = malloc(sizeof(node));
 
-    for (int i = 1; i < l->count; i++){
-        printf("nodo %d: %dn", i, tmp->data);
-        tmp = tmp->next;
+    if(source != NIL){
+        /*if(strcpy(z->key,source->key)==NULL)
+            exit(0) ;
+        z->color = source->color;
+        z->left = NIL;
+        z->left->p = z;
+        z->right = NIL;
+        z->right->p = z;
+        z->p = dest->p;
+
+        dest = z;
+        */
+
+        node *z = RBinsert(Dest, source->key);
+        list_insert(l, z);
+        RBcopy(source->left, Dest, l);
+        RBcopy(source->right, Dest, l);
     }
 }
 
-
-
 filtro *genera_filtro (char* s, char* r, int k){
-    filtro *f, *previous;
+    filtro *f = malloc(sizeof(filtro));
+    filtro *previous = malloc(sizeof(filtro));
+    init_filtro(f);
+    init_filtro(previous);
 
     for(int i=0; i<k; i++){
         filtro* current = malloc(sizeof(filtro));
@@ -423,7 +443,7 @@ filtro *genera_filtro (char* s, char* r, int k){
         current->element = e;
         current->right = NULL;
         current->left = NULL;
-        if(i ==0){
+        if(i == 0){
             f = current;
         } else {
             previous->right = current;
@@ -510,9 +530,14 @@ void filtra_dic( RB* filtered, list *l_filtered, filtro *f, int k){
     }
 }
 
-int play(RB *dic, RB *filtered,  list* l_filtered, int n, int k, int *num_words, int *found, char *r){
-    int num_filt = (*num_words);
+int play(RB *dic, int n, int k, int *found, char *r){
     char s[LENGTH];
+    list *l_filtered = malloc(sizeof(list));
+    init_list(l_filtered);
+    RB *filtered = malloc(sizeof(RB));
+    init(filtered);
+
+    RBcopy(dic->root, filtered, l_filtered);
 
     while (n > 0) {
         if (fscanf(stdin, "%s", s) == 0) return -1;
@@ -539,8 +564,6 @@ int play(RB *dic, RB *filtered,  list* l_filtered, int n, int k, int *num_words,
                 RBinsert(dic, s);
                 node *z = RBinsert(filtered, s);
                 list_insert(l_filtered, z);
-                (*num_words) = (*num_words) +1;
-                num_filt = num_filt+1;
             }
 
             if (debug) {
@@ -569,7 +592,6 @@ int play(RB *dic, RB *filtered,  list* l_filtered, int n, int k, int *num_words,
                 if (strcmp(s, r) == 0) {
                     fprintf(stdout, "%s", "ok\n");
                     *found = 1;
-                    //break;
                 } else {
                     filtro *f = genera_filtro(s, r, k);
                     stampa_filtro(f);
@@ -585,6 +607,7 @@ int play(RB *dic, RB *filtered,  list* l_filtered, int n, int k, int *num_words,
     }
 
     free(filtered);
+    free(l_filtered);
     return 0;
 }
 
@@ -592,16 +615,10 @@ int main() {
     NIL = malloc(sizeof(node));
     NIL->color = BLACK;
 
-    int k, found=0, num_words=0;
+    int k, found=0;
     char s[30];
     RB * dic = malloc(sizeof(RB));
     init(dic);
-
-    list *l_filtered = malloc(sizeof(list));
-    init_list(l_filtered);
-
-    RB * filtered = malloc(sizeof(RB));
-    init(filtered);
 
     //leggo k = lunghezza delle parole
     if(fscanf(stdin, "%d", &k)==0)    return -1;
@@ -614,12 +631,7 @@ int main() {
         if(strlen(s)!=k)    return -1;
 
         RBinsert(dic, s);
-        num_words ++;
-        node *z = RBinsert(filtered, s);
-        list_insert(l_filtered, z);
     }
-
-    if(num_words<1)     return -1;
 
     if(debug){
         printf("\nParole ammissibili\n");
@@ -640,7 +652,7 @@ int main() {
      che racchiudono tra di loro una sequenza di nuove parole da aggiungere all'insieme delle parole ammissibili*/
     while(n!=0) {
 
-        if(play(dic, filtered, l_filtered, n, k, &num_words, &found, r)!=0)
+        if(play(dic, n, k, &found, r)!=0)
             printf("\nERRORE!");
 
         if (debug) {
@@ -661,7 +673,7 @@ Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
                 break;
             }
             if (debug) {
-                printf("\ns: %s\n", s);
+                printf("\nStringa in ingresso: %s\n", s);
             }
 
             if (strcmp(s, "+inserisci_inizio") == 0) {
@@ -674,9 +686,6 @@ Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
                     if (strlen(s) != k) return -1;
 
                     RBinsert(dic, s);
-                    num_words++;
-                    node *z = RBinsert(filtered, s);
-                    list_insert(l_filtered, z);
                 }
 
                 if (debug) {
@@ -687,6 +696,8 @@ Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
             }
             else if(strcmp(s, "+nuova_partita") == 0){
                 found=0;
+                if (debug)
+                    printf("\nNuova partita\n");
 
                 if( fscanf (stdin, "%s",r)==0 )    return -1;
                 if( fscanf (stdin, "%d",&n)==0 )    return -1;
@@ -704,8 +715,6 @@ Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
     }
 
     free(dic);
-    free(filtered);
     free(NIL);
-    free(l_filtered);
     return 0;
 }
