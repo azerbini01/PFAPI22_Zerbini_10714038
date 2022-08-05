@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LENGTH 64
+#define LENGTH 30
 #define RED 0
 #define BLACK 1
 
@@ -308,6 +308,7 @@ void RBdelete(RB *T, node *z){
     if(yOriginalColor == BLACK){
         RBdelete_fixup(T, x);
     }
+    //free(x);
 }
 
 typedef struct{
@@ -409,8 +410,6 @@ void RBcopy( node *source, RB *Dest, list *l){
 filtro *genera_filtro (char* s, char* r, int k){
     filtro *f = malloc(sizeof(filtro));
     filtro *previous = malloc(sizeof(filtro));
-    init_filtro(f);
-    init_filtro(previous);
 
     for(int i=0; i<k; i++){
         filtro* current = malloc(sizeof(filtro));
@@ -506,26 +505,37 @@ void filtra_dic( RB* filtered, list *l_filtered, filtro *f, int k){
         while(cur_node != NULL){
             if(current->element->symb == '+'){
                 if(cur_node->data->key[current->element->index] != current->element->ch_s){
-                    delete_node_l(l_filtered, cur_node);
-                    RBdelete(filtered, cur_node->data);
+                    element *nodeToRemove = cur_node;
+                    cur_node = cur_node->next;
+
+                    RBdelete(filtered, nodeToRemove->data);
+                    delete_node_l(l_filtered, nodeToRemove);
+                    continue;
                 }
             }
-            if(current->element->symb == '/') {
+            else if(current->element->symb == '/') {
                 if (eliminaFilt_slash(current->element->index, current->element->ch_s, cur_node->data->key, f_header, k)) {
-                    delete_node_l(l_filtered, cur_node);
-                    RBdelete(filtered, cur_node->data);
+                    element *nodeToRemove = cur_node;
+                    cur_node = cur_node->next;
+
+                    RBdelete(filtered, nodeToRemove->data);
+                    delete_node_l(l_filtered, nodeToRemove);
+                    continue;
                 }
             }
-            if(current->element->symb == '|') {
+            else if(current->element->symb == '|') {
                 if (eliminaFilt_pipe(current->element->index, current->element->ch_s, cur_node->data->key, f_header, k)) {
-                    delete_node_l(l_filtered, cur_node);
-                    RBdelete(filtered, cur_node->data);
+                    element *nodeToRemove = cur_node;
+                    cur_node = cur_node->next;
+
+                    RBdelete(filtered, nodeToRemove->data);
+                    delete_node_l(l_filtered, nodeToRemove);
+                    continue;
                 }
             }
 
             cur_node = cur_node->next;
         }
-
         current = current->right;
     }
 }
@@ -601,6 +611,7 @@ int play(RB *dic, int n, int k, int *found, char *r){
                     /*Inoltre, dopo ogni confronto, il programma deve stampare in output il numero di parole ammissibili ancora compatibili
  * con i vincoli appresi tranne nel caso di un confronto con esito “not_exists”*/
                     printf("\n%d", l_filtered->count);
+                    free(f);
                 }
             }
         }
