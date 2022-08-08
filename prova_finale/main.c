@@ -17,16 +17,16 @@ typedef struct n{
 }node;
 
 typedef struct{
-    node* root;
+    node *root;
+    node *NIL;
 }RB;
 
-node *NIL;
-
 void init(RB* T){
-    T->root = NIL;
-    T->root->p = NIL;
-    T->root->right = NIL;
-    T->root->left = NIL;
+    T->NIL->color = BLACK;
+    T->root = T->NIL;
+    T->root->p = T->NIL;
+    T->root->right = T->NIL;
+    T->root->left = T->NIL;
 }
 
 void left_rotate(RB* T, node *x){
@@ -34,11 +34,11 @@ void left_rotate(RB* T, node *x){
 
     y = x->right;
     x->right = y->left;
-    if(y->left != NIL)
+    if(y->left != T->NIL)
         y->left->p = x;
 
     y->p = x->p;
-    if(y->p == NIL)
+    if(y->p == T->NIL)
         T->root = y;
     else if(x == x->p->left)
         x->p->left = y;
@@ -54,11 +54,11 @@ void right_rotate(RB* T, node *x){
 
     y = x->left;
     x->left = y->right;
-    if(y->right != NIL)
+    if(y->right != T->NIL)
         y->right->p = x;
 
     y->p = x->p;
-    if(y->p == NIL)
+    if(y->p == T->NIL)
         T->root = y;
     else if(x == x->p->left)
         x->p->left = y;
@@ -69,16 +69,24 @@ void right_rotate(RB* T, node *x){
     x->p = y;
 }
 
-void inorderWalk(node *x){
-    if(x != NIL){
-        inorderWalk(x->left);
+void inorderWalk(RB* T, node *x){
+    if(x != T->NIL){
+        inorderWalk(T, x->left);
         printf("%s\n", x->key);
-        inorderWalk(x->right);
+        inorderWalk(T, x->right);
     }
 }
 
-node *RB_minimum(node *x){
-    while(x->left != NIL){
+void RBfree(RB* T, node *x){
+    if(x != T->NIL){
+        RBfree(T, x->left);
+        free(x);
+        RBfree(T, x->right);
+    }
+}
+
+node *RB_minimum(RB *T, node *x){
+    while(x->left != T->NIL){
         x = x->left;
     }
     return x;
@@ -87,7 +95,7 @@ node *RB_minimum(node *x){
 node *RBsearch(RB* T, char* key){
     node *x = T->root;
 
-    while(x != NIL && strcmp(x->key, key)!=0){  //x->key != key
+    while(x != T->NIL && strcmp(x->key, key)!=0){  //x->key != key
         if(strcmp(x->key, key)>0)    //key < x->key
             x = x->left;
         else
@@ -151,13 +159,13 @@ node* RBinsert(RB *T, char* key){
     if(strcpy(z->key,key)==NULL)   //z->key = key
         exit(0) ;
     z->color = RED;
-    z->left = NIL;
-    z->right = NIL;
+    z->left = T->NIL;
+    z->right = T->NIL;
 
     x = T->root;
-    y = NIL;
+    y = T->NIL;
 
-    while(x != NIL){
+    while(x != T->NIL){
         y = x;
         if(strcmp(z->key,x->key)==0)     return x;
         else if(strcmp(z->key,x->key)<0) //z->key < x->key
@@ -166,7 +174,7 @@ node* RBinsert(RB *T, char* key){
             x = x->right;
     }
 
-    if(y == NIL)
+    if(y == T->NIL)
         T->root = z;
     else if(strcmp(z->key,y->key)<=0) //z->key <= y->key
         y->left = z;
@@ -178,137 +186,6 @@ node* RBinsert(RB *T, char* key){
     RBinsert_fixup(T, z);
 
     return z;
-}
-
-void RBdelete_fixup(RB *T, node *x){
-    node *w;
-
-    while(x != T->root && x->color == BLACK){
-
-        if(x == x->p->left){
-            w = x->p->right;
-
-            if(w->color == RED){
-                w->color = BLACK;
-                x->p->color = RED;
-                left_rotate(T, x->p);
-                w = x->p->right;
-            }
-
-            if(w->left->color == BLACK && w->right->color == BLACK){
-                w->color = RED;
-                x->p->color = BLACK;
-                x = x->p;
-            }
-            else{
-
-                if(w->right->color == BLACK){
-                    w->color = RED;
-                    w->left->color = BLACK;
-                    right_rotate(T, w);
-                    w = x->p->right;
-                }
-
-                w->color = x->p->color;
-                x->p->color = BLACK;
-                x->right->color = BLACK;
-                left_rotate(T, x->p);
-                x = T->root;
-
-            }
-
-        }
-        else{
-            w = x->p->left;
-
-            if(w->color == RED){
-                w->color = BLACK;
-                x->p->color = BLACK;
-                right_rotate(T, x->p);
-                w = x->p->left;
-            }
-
-            if(w->left->color == BLACK && w->right->color == BLACK){
-                w->color = RED;
-                x->p->color = BLACK;
-                x = x->p;
-            }
-            else{
-
-                if(w->left->color == BLACK){
-                    w->color = RED;
-                    w->right->color = BLACK;
-                    left_rotate(T, w);
-                    w = x->p->left;
-                }
-
-                w->color = x->p->color;
-                x->p->color = BLACK;
-                w->left->color = BLACK;
-                right_rotate(T, x->p);
-                x = T->root;
-
-            }
-        }
-
-    }
-
-    x->color = BLACK;
-}
-
-void replace(RB* T, node *u, node *v){  /* replace node u with node v */
-    if(u->p == NIL)
-        T->root = v;
-
-    else if(u == u->p->left)
-        u->p->left = v;
-
-    else
-        u->p->right = v;
-
-    v->p = u->p;
-}
-
-void RBdelete(RB *T, node *z){
-    node *y, *x;
-    int yOriginalColor;
-
-    y = z;
-    yOriginalColor = y->color;
-
-    if(z->left == NIL){
-        x = z->right;
-        replace(T, z, z->right);
-    }
-    else if(z->right == NIL){
-        x = z->left;
-        replace(T, z, z->left);
-    }
-    else{
-        y = RB_minimum(z->right);
-        yOriginalColor = y->color;
-
-        x = y->right;
-
-        if(y->p == z){
-            x->p = y;
-        }
-        else{
-            replace(T, y, y->right);
-            y->right = z->right;
-            y->right->p = y;
-        }
-
-        replace(T, z, y);
-        y->left = z->left;
-        y->left->p = y;
-        y->color = z->color;
-    }
-
-    if(yOriginalColor == BLACK){
-        RBdelete_fixup(T, x);
-    }
-    //free(x);
 }
 
 typedef struct{
@@ -323,13 +200,8 @@ typedef struct f{
     struct f *right;
 }filtro;
 
-void init_filtro(filtro *f) {
-    f->element = NULL;
-    f->left = f->right = NULL;
-}
-
 typedef struct node_l {
-    node *data;
+    char *data;
     struct node_l *prev;
     struct node_l *next;
 } element;
@@ -348,11 +220,11 @@ void init_list(list *l) {
     l->header = l->tailer = NULL;
 }
 
-void list_insert(list *l, node *new_data){
-    element *new_node;
-    new_node = malloc(sizeof(element));
+void list_insert(list *l, char *new_data){
+    element *new_node = malloc(sizeof(element));
+    new_node->data = malloc(30*sizeof(char));
 
-    new_node->data = new_data;
+    strcpy(new_node->data, new_data);
     new_node->next = NULL;
     new_node->prev = NULL;
 
@@ -368,14 +240,54 @@ void list_insert(list *l, node *new_data){
     l->count++;
 }
 
+void list_insert_inOrder(list *l, char *new_data){
+    element *curr = l->header;
+    element *new_node = malloc(sizeof(element));
+    new_node->data = malloc(30*sizeof(char));
+
+    strcpy(new_node->data, new_data);
+    new_node->next = NULL;
+    new_node->prev = NULL;
+
+    if (l->count == 0) {
+        new_node->prev = NULL;
+        l->header = l->tailer = new_node;
+        return;
+    }
+
+    while(curr!=NULL && strcmp(curr->data, new_data)<0){
+        curr = curr->next;
+    }
+
+    if(curr == NULL) {
+        new_node->prev = l->tailer;
+        l->tailer->next = new_node;
+        l->tailer = new_node;
+    } else {
+        if (curr == l->header) {
+            new_node->prev = NULL;
+            new_node->next = curr;
+            curr->prev = new_node;
+            l->header = new_node;
+        } else {
+            curr->prev->next = new_node;
+            new_node->prev = curr->prev;
+            new_node->next = curr;
+            curr->prev = new_node;
+        }
+    }
+
+    l->count++;
+}
+
 void delete_node_l(list *l, element *n){
     if(l->header == n)
         l->header = n->next;
-
     if(l->tailer == n)
         l->tailer = n->prev;
 
-    n->prev->next = n->next;
+    if (n->prev != NULL)
+        n->prev->next = n->next;
     if (n->next != NULL)
         n->next->prev = n->prev;
 
@@ -383,27 +295,20 @@ void delete_node_l(list *l, element *n){
     l->count--;
 }
 
-void RBcopy( node *source, RB *Dest, list *l){
-    //node *z;
-    //z = malloc(sizeof(node));
+void print_list(list *l){
+    element *curr = l->header;
 
-    if(source != NIL){
-        /*if(strcpy(z->key,source->key)==NULL)
-            exit(0) ;
-        z->color = source->color;
-        z->left = NIL;
-        z->left->p = z;
-        z->right = NIL;
-        z->right->p = z;
-        z->p = dest->p;
+    while (curr != NULL){
+        printf("%s\n", curr->data);
+        curr = curr->next;
+    }
+}
 
-        dest = z;
-        */
-
-        node *z = RBinsert(Dest, source->key);
-        list_insert(l, z);
-        RBcopy(source->left, Dest, l);
-        RBcopy(source->right, Dest, l);
+void RBcopy(RB* Ts, node *source, list *l){
+    if(source != Ts->NIL){
+        RBcopy(Ts, source->left, l);
+        list_insert(l, source->key);
+        RBcopy(Ts, source->right, l);
     }
 }
 
@@ -455,11 +360,12 @@ filtro *genera_filtro (char* s, char* r, int k){
 
 void stampa_filtro(filtro *f){
     filtro *current=f;
-    while(current->right != NULL){
+    while(current != NULL){
         printf("%c", current->element->symb);
         current = current->right;
     }
     printf("\n");
+
 }
 
 int eliminaFilt_pipe(int index, char ch_s, char *s, filtro *f_header, int k){
@@ -482,7 +388,7 @@ int eliminaFilt_slash(int index, char ch_s, char *s, filtro *f_header, int k){
     int cont_occ_s=0, cont_occ_f=0;
     filtro *fe = f_header;
 
-    for(int i=0; i<k; i++){    //veroficare < <=
+    for(int i=0; i<k; i++){
         if(s[i] == ch_s) {
             cont_occ_s ++;
             if(fe->element->symb == '+' && fe->element->ch_s == ch_s )
@@ -496,39 +402,36 @@ int eliminaFilt_slash(int index, char ch_s, char *s, filtro *f_header, int k){
     return 0;
 }
 
-void filtra_dic( RB* filtered, list *l_filtered, filtro *f, int k){
+void filtra_dic( list *l_filtered, filtro *f, int k){
     filtro *f_header = f;
     filtro *current = f;
 
-    while(current->right != NULL){
+    while(current != NULL){
         element *cur_node = l_filtered->header;
         while(cur_node != NULL){
             if(current->element->symb == '+'){
-                if(cur_node->data->key[current->element->index] != current->element->ch_s){
+                if(cur_node->data[current->element->index] != current->element->ch_s){
                     element *nodeToRemove = cur_node;
                     cur_node = cur_node->next;
 
-                    RBdelete(filtered, nodeToRemove->data);
                     delete_node_l(l_filtered, nodeToRemove);
                     continue;
                 }
             }
             else if(current->element->symb == '/') {
-                if (eliminaFilt_slash(current->element->index, current->element->ch_s, cur_node->data->key, f_header, k)) {
+                if (eliminaFilt_slash(current->element->index, current->element->ch_s, cur_node->data, f_header, k)) {
                     element *nodeToRemove = cur_node;
                     cur_node = cur_node->next;
 
-                    RBdelete(filtered, nodeToRemove->data);
                     delete_node_l(l_filtered, nodeToRemove);
                     continue;
                 }
             }
             else if(current->element->symb == '|') {
-                if (eliminaFilt_pipe(current->element->index, current->element->ch_s, cur_node->data->key, f_header, k)) {
+                if (eliminaFilt_pipe(current->element->index, current->element->ch_s, cur_node->data, f_header, k)) {
                     element *nodeToRemove = cur_node;
                     cur_node = cur_node->next;
 
-                    RBdelete(filtered, nodeToRemove->data);
                     delete_node_l(l_filtered, nodeToRemove);
                     continue;
                 }
@@ -544,10 +447,12 @@ int play(RB *dic, int n, int k, int *found, char *r){
     char s[LENGTH];
     list *l_filtered = malloc(sizeof(list));
     init_list(l_filtered);
-    RB *filtered = malloc(sizeof(RB));
-    init(filtered);
 
-    RBcopy(dic->root, filtered, l_filtered);
+    RBcopy(dic, dic->root, l_filtered);
+    if (debug) {
+        printf("Prima stampa filtrate list\n");
+        print_list(l_filtered);
+    }
 
     while (n > 0) {
         if (fscanf(stdin, "%s", s) == 0) return -1;
@@ -559,7 +464,7 @@ int play(RB *dic, int n, int k, int *found, char *r){
             /*Quando, durante una partita, da input si legge il comando +stampa_filtrate, il programma deve produrre in output,
               in ordine lessicografico, l'insieme delle parole ammissibili che sono compatibili con i vincoli appresi fino a quel momento nella partita,
               scritte una per riga.
-*/          inorderWalk(filtered->root);
+*/          print_list(l_filtered);
 
         }
         else if (strcmp(s, "+inserisci_inizio") == 0) {
@@ -569,17 +474,19 @@ int play(RB *dic, int n, int k, int *found, char *r){
             while (1) {
                 if (fscanf(stdin, "%s", s) == 0) return -1;
                 if (strcmp(s, "+inserisci_fine") == 0) break;
+
                 if (strlen(s) != k) return -1;
 
                 RBinsert(dic, s);
-                node *z = RBinsert(filtered, s);
-                list_insert(l_filtered, z);
+                list_insert_inOrder(l_filtered, s);
             }
 
             if (debug) {
                 printf("\nParole ammissibili\n");
-                inorderWalk(dic->root);
+                inorderWalk(dic, dic->root);
                 printf("\n");
+                printf("Parole filtrate\n");
+                print_list(l_filtered);
             }
         }
         else {
@@ -589,7 +496,7 @@ int play(RB *dic, int n, int k, int *found, char *r){
 
             if (strlen(s) != k) return -1;
 
-            if (RBsearch(dic, s) == NIL) {
+            if (RBsearch(dic, s) == dic->NIL) {
                 fprintf(stdout, "%s", "not_exists\n");
                 //continue;
             }
@@ -606,29 +513,32 @@ int play(RB *dic, int n, int k, int *found, char *r){
                     filtro *f = genera_filtro(s, r, k);
                     stampa_filtro(f);
 
-                    filtra_dic(filtered, l_filtered, f, k);
+                    filtra_dic(l_filtered, f, k);
 
                     /*Inoltre, dopo ogni confronto, il programma deve stampare in output il numero di parole ammissibili ancora compatibili
  * con i vincoli appresi tranne nel caso di un confronto con esito “not_exists”*/
-                    printf("\n%d", l_filtered->count);
+                    printf("%d\n", l_filtered->count);
+
+                    if(debug){
+                        printf("\nParole filtrate lista: ");
+                        print_list(l_filtered);
+                    }
+
                     free(f);
                 }
             }
         }
     }
 
-    free(filtered);
     free(l_filtered);
     return 0;
 }
 
 int main() {
-    NIL = malloc(sizeof(node));
-    NIL->color = BLACK;
-
     int k, found=0;
     char s[30];
     RB * dic = malloc(sizeof(RB));
+    dic->NIL = malloc(sizeof(node));
     init(dic);
 
     //leggo k = lunghezza delle parole
@@ -646,7 +556,7 @@ int main() {
 
     if(debug){
         printf("\nParole ammissibili\n");
-        inorderWalk(dic->root);
+        inorderWalk(dic, dic->root);
         printf("\n");
     }
 
@@ -701,7 +611,7 @@ Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
 
                 if (debug) {
                     printf("\nParole ammissibili\n");
-                    inorderWalk(dic->root);
+                    inorderWalk(dic, dic->root);
                     printf("\n");
                 }
             }
@@ -725,7 +635,7 @@ Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
         }
     }
 
+    free(dic->NIL);
     free(dic);
-    free(NIL);
     return 0;
 }
