@@ -196,9 +196,26 @@ typedef struct{
 
 typedef struct f{
     filter_element * element;
-    struct f *left;
     struct f *right;
+    struct f *left;
 }filtro;
+
+typedef struct lf{
+    filtro *data;
+    struct lf *next;
+} listaFiltri;
+
+typedef struct {
+    listaFiltri *header;
+} headerFilt;
+
+void filt_insert(headerFilt *hf, filtro *new_data){
+    listaFiltri *new_node = malloc(sizeof(listaFiltri));
+
+    new_node->data = new_data;
+    new_node->next = hf->header;
+    hf->header = new_node;
+}
 
 typedef struct node_l {
     char *data;
@@ -443,10 +460,22 @@ void filtra_dic( list *l_filtered, filtro *f, int k){
     }
 }
 
+void passaFiltri(list *l_filtered, headerFilt *f_head, int k){
+    listaFiltri *curr = f_head->header;
+
+    while(curr != NULL){
+        filtra_dic(l_filtered, curr->data, k);
+        curr = curr->next;
+    }
+}
+
 int play(RB *dic, int n, int k, int *found, char *r){
     char s[LENGTH];
+    filtro *f;
     list *l_filtered = malloc(sizeof(list));
     init_list(l_filtered);
+    headerFilt *f_head = malloc(sizeof(headerFilt));
+    f_head->header = NULL;
 
     RBcopy(dic, dic->root, l_filtered);
     if (debug) {
@@ -510,10 +539,11 @@ int play(RB *dic, int n, int k, int *found, char *r){
                     fprintf(stdout, "%s", "ok\n");
                     *found = 1;
                 } else {
-                    filtro *f = genera_filtro(s, r, k);
+                    f = genera_filtro(s, r, k);
+                    filt_insert(f_head, f);
                     stampa_filtro(f);
 
-                    filtra_dic(l_filtered, f, k);
+                    passaFiltri(l_filtered, f_head, k);
 
                     /*Inoltre, dopo ogni confronto, il programma deve stampare in output il numero di parole ammissibili ancora compatibili
  * con i vincoli appresi tranne nel caso di un confronto con esito “not_exists”*/
@@ -523,18 +553,71 @@ int play(RB *dic, int n, int k, int *found, char *r){
                         printf("\nParole filtrate lista: ");
                         print_list(l_filtered);
                     }
-
-                    free(f);
                 }
             }
         }
     }
 
     free(l_filtered);
+    free(f_head);
     return 0;
 }
 
+int testFiltered(){
+    int k=5;
+    list *l_filtered = malloc(sizeof(list));
+    init_list(l_filtered);
+
+    char *add = "PsjW5";
+    char *r ="5sjaH";
+
+
+    list_insert_inOrder(l_filtered, add);
+    // /+///  -s9k0
+    filtro *f = malloc(sizeof(filtro));
+    filter_element *e = malloc(sizeof(filter_element));
+    e->ch_s = '-';
+    e->symb = '/';
+    e->index = 0;
+    f->element = e;
+    e = malloc(sizeof(filter_element));
+    e->ch_s = 's';
+    e->symb = '+';
+    e->index = 1;
+    filtro *f1 = malloc(sizeof(filtro));
+    f1->element = e;
+    f->right = f1;
+    e = malloc(sizeof(filter_element));
+    e->ch_s = '9';
+    e->symb = '/';
+    e->index = 2;
+    filtro *f2 = malloc(sizeof(filtro));
+    f2->element = e;
+    f1->right = f2;
+    e = malloc(sizeof(filter_element));
+    e->ch_s = 'k';
+    e->symb = '/';
+    e->index = 3;
+    filtro *f3 = malloc(sizeof(filtro));
+    f3->element = e;
+    f2->right = f3;
+    e = malloc(sizeof(filter_element));
+    e->ch_s = '0';
+    e->symb = '/';
+    e->index = 4;
+    filtro *f4 = malloc(sizeof(filtro));
+    f4->element = e;
+    f3->right = f4;
+
+    filtra_dic(l_filtered, f, 5);
+    return 0;
+
+}
+
 int main() {
+
+    //testFiltered();
+
     int k, found=0;
     char s[30];
     RB * dic = malloc(sizeof(RB));
