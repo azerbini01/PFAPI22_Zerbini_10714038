@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LENGTH 20
+#define LENGTH 25
 #define RED 0
 #define BLACK 1
 
@@ -232,9 +232,10 @@ void init_list(list *l) {
 
 void list_insert(list *l, char *new_data){
     element *new_node = malloc(sizeof(element));
-    new_node->data = malloc(30*sizeof(char));
+    new_node->data = malloc(LENGTH*sizeof(char));
 
     strcpy(new_node->data, new_data);
+    //new_node->data = new_data;
     new_node->next = NULL;
     new_node->prev = NULL;
 
@@ -253,7 +254,7 @@ void list_insert(list *l, char *new_data){
 void list_insert_inOrder(list *l, char *new_data){
     element *curr = l->header;
     element *new_node = malloc(sizeof(element));
-    new_node->data = malloc(30*sizeof(char));
+    new_node->data = malloc(LENGTH*sizeof(char));
 
     strcpy(new_node->data, new_data);
     new_node->next = NULL;
@@ -320,7 +321,7 @@ void free_list(list *l){
 
     while (curr != NULL){
         next = curr->next;
-        free(curr->data);
+        //free(curr->data);
         free(curr);
         curr = next;
     }
@@ -593,11 +594,9 @@ int play(RB *dic, int n, int k, int *found, char *r){
     return 0;
 }
 
-
-
 int main() {
     int k, found=0;
-    char s[30];
+    char s[LENGTH];
     RB * dic = malloc(sizeof(RB));
     dic->NIL = malloc(sizeof(node));
     init(dic);
@@ -622,7 +621,7 @@ int main() {
     }
 
     //r = parola di riferimento (di lunghezza k caratteri)
-    char r[30];
+    char r[LENGTH];
     if( fscanf (stdin, "%s",r)==0 )    return -1;
     //numero n massimo di parole da confrontare con la parola di riferimento
     int n;
