@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LENGTH 30
+#define LENGTH 20
 #define RED 0
 #define BLACK 1
 
@@ -336,7 +336,7 @@ void RBcopy(RB* Ts, node *source, list *l){
 
 filtro *genera_filtro (char* s, char* r, int k){
     filtro *f = malloc(sizeof(filtro));
-    filtro *previous = malloc(sizeof(filtro));
+    filtro *previous=f /*= malloc(sizeof(filtro))*/;
 
     for(int i=0; i<k; i++){
         filtro* current = malloc(sizeof(filtro));
@@ -586,7 +586,7 @@ int play(RB *dic, int n, int k, int *found, char *r){
         }
     }
 
-   free_lfiltri(f_head->header);
+    free_lfiltri(f_head->header);
     free(f_head);
     free_list(l_filtered);
     free(l_filtered);
