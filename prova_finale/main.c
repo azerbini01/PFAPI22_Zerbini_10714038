@@ -269,6 +269,7 @@ void list_insert_inOrder(list *l, char *new_data){
     if (l->count == 0) {
         new_node->prev = NULL;
         l->header = l->tailer = new_node;
+        l->count++;
         return;
     }
 
@@ -406,13 +407,13 @@ int eliminaFilt_slash(int index, char ch_s, char *s, filtro *f_header, int k){
     filtro *fe = f_header;
 
     for(int i=0; i<k; i++){
-        if(s[i] == ch_s) {
+        if(s[i] == ch_s)
             cont_occ_s ++;
             if(fe->element->symb == '+' && fe->element->ch_s == ch_s )
                 cont_occ_f ++;
             if(fe->element->symb == '|' && fe->element->ch_s == ch_s )
                 cont_occ_f ++;
-        }
+
         fe = fe->right;
     }
     if(cont_occ_s >0 && cont_occ_s > cont_occ_f)    return 1;
@@ -538,6 +539,7 @@ int play(RB *dic, int n, int k, int *found, char *r){
                 if (strcmp(s, r) == 0) {
                     fprintf(stdout, "%s", "ok\n");
                     *found = 1;
+                    break;
                 } else {
                     f = genera_filtro(s, r, k);
                     filt_insert(f_head, f);
@@ -568,27 +570,27 @@ int testFiltered(){
     list *l_filtered = malloc(sizeof(list));
     init_list(l_filtered);
 
-    char *add = "PsjW5";
-    char *r ="5sjaH";
+    char *add1 = "5sjaH";
+    list_insert_inOrder(l_filtered, add1);
+    char *add2 = "asHdd";
+    list_insert_inOrder(l_filtered, add2);
 
-
-    list_insert_inOrder(l_filtered, add);
-    // /+///  -s9k0
+    // |//// sm_ks
     filtro *f = malloc(sizeof(filtro));
     filter_element *e = malloc(sizeof(filter_element));
-    e->ch_s = '-';
-    e->symb = '/';
+    e->ch_s = 's';
+    e->symb = '|';
     e->index = 0;
     f->element = e;
     e = malloc(sizeof(filter_element));
-    e->ch_s = 's';
-    e->symb = '+';
+    e->ch_s = 'm';
+    e->symb = '/';
     e->index = 1;
     filtro *f1 = malloc(sizeof(filtro));
     f1->element = e;
     f->right = f1;
     e = malloc(sizeof(filter_element));
-    e->ch_s = '9';
+    e->ch_s = '_';
     e->symb = '/';
     e->index = 2;
     filtro *f2 = malloc(sizeof(filtro));
@@ -602,12 +604,13 @@ int testFiltered(){
     f3->element = e;
     f2->right = f3;
     e = malloc(sizeof(filter_element));
-    e->ch_s = '0';
+    e->ch_s = 's';
     e->symb = '/';
     e->index = 4;
     filtro *f4 = malloc(sizeof(filtro));
     f4->element = e;
     f3->right = f4;
+    f4->right = NULL;
 
     filtra_dic(l_filtered, f, 5);
     return 0;
