@@ -80,16 +80,9 @@ void inorderWalk(RB* T, node *x){
 void RBfree(RB* T, node *x){
     if(x != T->NIL){
         RBfree(T, x->left);
-        free(x);
         RBfree(T, x->right);
+        free(x);
     }
-}
-
-node *RB_minimum(RB *T, node *x){
-    while(x->left != T->NIL){
-        x = x->left;
-    }
-    return x;
 }
 
 node *RBsearch(RB* T, char* key){
@@ -197,7 +190,7 @@ typedef struct{
 typedef struct f{
     filter_element * element;
     struct f *right;
-    struct f *left;
+    //struct f *left;
 }filtro;
 
 typedef struct lf{
@@ -322,6 +315,17 @@ void print_list(list *l){
     }
 }
 
+void free_list(list *l){
+    element *curr = l->header, *next;
+
+    while (curr != NULL){
+        next = curr->next;
+        free(curr->data);
+        free(curr);
+        curr = next;
+    }
+}
+
 void RBcopy(RB* Ts, node *source, list *l){
     if(source != Ts->NIL){
         RBcopy(Ts, source->left, l);
@@ -364,12 +368,12 @@ filtro *genera_filtro (char* s, char* r, int k){
 
         current->element = e;
         current->right = NULL;
-        current->left = NULL;
+        //current->left = NULL;
         if(i == 0){
             f = current;
         } else {
             previous->right = current;
-            current->left = previous;
+            //current->left = previous;
         }
         previous = current;
     }
@@ -384,6 +388,28 @@ void stampa_filtro(filtro *f){
     }
     printf("\n");
 
+}
+
+void free_filtro(filtro *f){
+    filtro *current=f, *next;
+
+    while(current != NULL){
+        next = current->right;
+        free(current->element);
+        free(current);
+        current = next;
+    }
+}
+
+void free_lfiltri(listaFiltri *lf){
+    listaFiltri *current=lf, *next;
+
+    while(current != NULL){
+        next = current->next;
+        free_filtro(current->data);
+        free(current);
+        current = next;
+    }
 }
 
 int eliminaFilt_pipe(int index, char ch_s, char *s, filtro *f_header, int k){
@@ -409,10 +435,10 @@ int eliminaFilt_slash(int index, char ch_s, char *s, filtro *f_header, int k){
     for(int i=0; i<k; i++){
         if(s[i] == ch_s)
             cont_occ_s ++;
-            if(fe->element->symb == '+' && fe->element->ch_s == ch_s )
-                cont_occ_f ++;
-            if(fe->element->symb == '|' && fe->element->ch_s == ch_s )
-                cont_occ_f ++;
+        if(fe->element->symb == '+' && fe->element->ch_s == ch_s )
+            cont_occ_f ++;
+        if(fe->element->symb == '|' && fe->element->ch_s == ch_s )
+            cont_occ_f ++;
 
         fe = fe->right;
     }
@@ -560,67 +586,16 @@ int play(RB *dic, int n, int k, int *found, char *r){
         }
     }
 
-    free(l_filtered);
+   free_lfiltri(f_head->header);
     free(f_head);
+    free_list(l_filtered);
+    free(l_filtered);
     return 0;
 }
 
-int testFiltered(){
-    int k=5;
-    list *l_filtered = malloc(sizeof(list));
-    init_list(l_filtered);
 
-    char *add1 = "5sjaH";
-    list_insert_inOrder(l_filtered, add1);
-    char *add2 = "asHdd";
-    list_insert_inOrder(l_filtered, add2);
-
-    // |//// sm_ks
-    filtro *f = malloc(sizeof(filtro));
-    filter_element *e = malloc(sizeof(filter_element));
-    e->ch_s = 's';
-    e->symb = '|';
-    e->index = 0;
-    f->element = e;
-    e = malloc(sizeof(filter_element));
-    e->ch_s = 'm';
-    e->symb = '/';
-    e->index = 1;
-    filtro *f1 = malloc(sizeof(filtro));
-    f1->element = e;
-    f->right = f1;
-    e = malloc(sizeof(filter_element));
-    e->ch_s = '_';
-    e->symb = '/';
-    e->index = 2;
-    filtro *f2 = malloc(sizeof(filtro));
-    f2->element = e;
-    f1->right = f2;
-    e = malloc(sizeof(filter_element));
-    e->ch_s = 'k';
-    e->symb = '/';
-    e->index = 3;
-    filtro *f3 = malloc(sizeof(filtro));
-    f3->element = e;
-    f2->right = f3;
-    e = malloc(sizeof(filter_element));
-    e->ch_s = 's';
-    e->symb = '/';
-    e->index = 4;
-    filtro *f4 = malloc(sizeof(filtro));
-    f4->element = e;
-    f3->right = f4;
-    f4->right = NULL;
-
-    filtra_dic(l_filtered, f, 5);
-    return 0;
-
-}
 
 int main() {
-
-    //testFiltered();
-
     int k, found=0;
     char s[30];
     RB * dic = malloc(sizeof(RB));
