@@ -2,14 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LENGTH 25
 #define RED 0
 #define BLACK 1
 
 #define debug 0
 
 typedef struct n{
-    char key[LENGTH];
+    char *key;
     int color;
     struct n *p;
     struct n *left;
@@ -145,9 +144,10 @@ void RBinsert_fixup(RB *T, node *z){
     T->root->color = BLACK;
 }
 
-node* RBinsert(RB *T, char* key){
+node* RBinsert(RB *T, char* key, int k){
     node *z, *x, *y;
     z = malloc(sizeof(node));
+    z->key = malloc(sizeof(char)*(k+1));
 
     if(strcpy(z->key,key)==NULL)   //z->key = key
         exit(0) ;
@@ -230,12 +230,12 @@ void init_list(list *l) {
     l->header = l->tailer = NULL;
 }
 
-void list_insert(list *l, char *new_data){
+void list_insert(list *l, char *new_data, int k){
     element *new_node = malloc(sizeof(element));
-    new_node->data = malloc(LENGTH*sizeof(char));
+    // new_node->data = malloc(sizeof(char)*(k+1));
+    new_node->data = new_data;
 
-    strcpy(new_node->data, new_data);
-    //new_node->data = new_data;
+    // strcpy(new_node->data, new_data);
     new_node->next = NULL;
     new_node->prev = NULL;
 
@@ -251,10 +251,10 @@ void list_insert(list *l, char *new_data){
     l->count++;
 }
 
-void list_insert_inOrder(list *l, char *new_data){
+void list_insert_inOrder(list *l, char *new_data, int k){
     element *curr = l->header;
     element *new_node = malloc(sizeof(element));
-    new_node->data = malloc(LENGTH*sizeof(char));
+    new_node->data = malloc(sizeof(char)*(k+1));
 
     strcpy(new_node->data, new_data);
     new_node->next = NULL;
@@ -321,17 +321,17 @@ void free_list(list *l){
 
     while (curr != NULL){
         next = curr->next;
-        //free(curr->data);
+        // free(curr->data);
         free(curr);
         curr = next;
     }
 }
 
-void RBcopy(RB* Ts, node *source, list *l){
+void RBcopy(RB* Ts, node *source, list *l, int k){
     if(source != Ts->NIL){
-        RBcopy(Ts, source->left, l);
-        list_insert(l, source->key);
-        RBcopy(Ts, source->right, l);
+        RBcopy(Ts, source->left, l, k);
+        list_insert(l, source->key, k);
+        RBcopy(Ts, source->right, l, k);
     }
 }
 
@@ -419,11 +419,11 @@ int eliminaFilt_pipe(int index, char ch_s, char *s, filtro *f_header, int k){
     filtro *fe = f_header;
     int cont_occ=0;
     for(int i=0; i<k; i++){
-            if(s[i] == ch_s) {
-                if(!(fe->element->symb == '+' && fe->element->ch_s == ch_s ))
-                    cont_occ ++;
-            }
-            fe = fe->right;
+        if(s[i] == ch_s) {
+            if(fe->element->ch_s != ch_s)
+                cont_occ ++;
+        }
+        fe = fe->right;
     }
     if(cont_occ == 0)   return 1;
     return 0;
@@ -498,14 +498,14 @@ void passaFiltri(list *l_filtered, headerFilt *f_head, int k){
 }
 
 int play(RB *dic, int n, int k, int *found, char *r){
-    char s[LENGTH];
+    char s[k+1];
     filtro *f;
     list *l_filtered = malloc(sizeof(list));
     init_list(l_filtered);
     headerFilt *f_head = malloc(sizeof(headerFilt));
     f_head->header = NULL;
 
-    RBcopy(dic, dic->root, l_filtered);
+    RBcopy(dic, dic->root, l_filtered, k);
     if (debug) {
         printf("Prima stampa filtrate list\n");
         print_list(l_filtered);
@@ -518,11 +518,8 @@ int play(RB *dic, int n, int k, int *found, char *r){
             if (debug) {
                 printf("Stampa filtrate\n");
             }
-            /*Quando, durante una partita, da input si legge il comando +stampa_filtrate, il programma deve produrre in output,
-              in ordine lessicografico, l'insieme delle parole ammissibili che sono compatibili con i vincoli appresi fino a quel momento nella partita,
-              scritte una per riga.
-*/          print_list(l_filtered);
 
+            print_list(l_filtered);
         }
         else if (strcmp(s, "+inserisci_inizio") == 0) {
             if (debug) {
@@ -532,11 +529,12 @@ int play(RB *dic, int n, int k, int *found, char *r){
                 if (fscanf(stdin, "%s", s) == 0) return -1;
                 if (strcmp(s, "+inserisci_fine") == 0) break;
 
-                if (strlen(s) != k) return -1;
+                //if (strlen(s) != k) return -1;
 
-                RBinsert(dic, s);
-                list_insert_inOrder(l_filtered, s);
+                RBinsert(dic, s, k);
+                list_insert_inOrder(l_filtered, s, k);
             }
+            passaFiltri(l_filtered, f_head, k);
 
             if (debug) {
                 printf("\nParole ammissibili\n");
@@ -551,7 +549,7 @@ int play(RB *dic, int n, int k, int *found, char *r){
                 printf("\nStampo output\n");
             }
 
-            if (strlen(s) != k) return -1;
+            //if (strlen(s) != k) return -1;
 
             if (RBsearch(dic, s) == dic->NIL) {
                 fprintf(stdout, "%s", "not_exists\n");
@@ -572,10 +570,8 @@ int play(RB *dic, int n, int k, int *found, char *r){
                     filt_insert(f_head, f);
                     stampa_filtro(f);
 
-                    passaFiltri(l_filtered, f_head, k);
+                    filtra_dic(l_filtered, f, k);
 
-                    /*Inoltre, dopo ogni confronto, il programma deve stampare in output il numero di parole ammissibili ancora compatibili
- * con i vincoli appresi tranne nel caso di un confronto con esito “not_exists”*/
                     printf("%d\n", l_filtered->count);
 
                     if(debug){
@@ -596,7 +592,7 @@ int play(RB *dic, int n, int k, int *found, char *r){
 
 int main() {
     int k, found=0;
-    char s[LENGTH];
+    char s[25];
     RB * dic = malloc(sizeof(RB));
     dic->NIL = malloc(sizeof(node));
     init(dic);
@@ -609,9 +605,9 @@ int main() {
     while(1){
         if( fscanf (stdin, "%s",s)==0 )    return -1;
         if(strcmp(s, "+nuova_partita")==0)  break;
-        if(strlen(s)!=k)    return -1;
+        //if(strlen(s)!=k)    return -1;
 
-        RBinsert(dic, s);
+        RBinsert(dic, s, k);
     }
 
     if(debug){
@@ -621,16 +617,12 @@ int main() {
     }
 
     //r = parola di riferimento (di lunghezza k caratteri)
-    char r[LENGTH];
+    char r[k+1];
     if( fscanf (stdin, "%s",r)==0 )    return -1;
     //numero n massimo di parole da confrontare con la parola di riferimento
     int n;
     if( fscanf (stdin, "%d",&n)==0 )    return -1;
 
-    //sequenza di parole (ognuna di k caratteri) da confrontare con la parola di riferimento
-    //Ogni tanto, nella sequenza di stringhe in input, può comparire il comando +stampa_filtrate
-    /*Inoltre, sia durante una partita, che tra una partita e l'altra, possono comparire i comandi +inserisci_inizio e +inserisci_fine
-     che racchiudono tra di loro una sequenza di nuove parole da aggiungere all'insieme delle parole ammissibili*/
     while(n!=0) {
 
         if(play(dic, n, k, &found, r)!=0)
@@ -642,11 +634,7 @@ int main() {
 
         if (found == 0)
             fprintf(stdout, "%s", "ko\n");
-/*Dopo che la partita è finita:
-•
-Non ci possono essere altre parole da confrontare (ma ci potrebbe essere l'inserimento di nuove parole ammissibili)
-•
-Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
+
         //una partita è stata finita
         while(1){
             if (fscanf(stdin, "%s", s) == EOF){
@@ -664,9 +652,9 @@ Se in input c'è il comando +nuova_partita, ha inizio una nuova partita*/
                 while (1) {
                     if (fscanf(stdin, "%s", s) == 0) return -1;
                     if (strcmp(s, "+inserisci_fine") == 0) break;
-                    if (strlen(s) != k) return -1;
+                    //if (strlen(s) != k) return -1;
 
-                    RBinsert(dic, s);
+                    RBinsert(dic, s, k);
                 }
 
                 if (debug) {
