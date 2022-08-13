@@ -256,6 +256,7 @@ typedef struct node_l {
 } element;
 
 typedef struct {
+    int ordered;
     // tiene traccia di quanti nodi sono presenti all'interno della lista
     int count;
     // puntatore al primo nodo della lista
@@ -265,9 +266,57 @@ typedef struct {
 } list;
 
 void init_list(list *l) {
+    l->ordered = 0;
     l->count = 0;
     l->header = l->tailer = NULL;
 }
+
+// We are Setting the given last node position to its proper position
+element* parition(list *l, element* first, element* last) {
+    // Get first node of given linked list
+    char *temp;
+    element* pivot = first;
+    element* front = first;
+    while (front != NULL && front != last) {
+        if (strcmp(front->data, last->data) < 0) {   //(front->data < last->data)
+            pivot = first;
+
+            // Swapping  node values
+            temp = first->data;
+            first->data = front->data;
+            front->data = temp;
+
+            // Visiting the next node
+            first = first->next;
+        }
+
+        // Visiting the next node
+        front = front->next;
+    }
+
+    // Change last node value to current node
+    temp = first->data;
+    first->data = last->data;
+    last->data = temp;
+    return pivot;
+}
+
+// Performing quick sort in  the given linked list
+void quick_sort(list *l, element * first, element * last) {
+    if (first == last) {
+        return;
+    }
+    element * pivot = parition(l, first, last);
+
+    if (pivot != NULL && pivot->next != NULL) {
+        quick_sort(l, pivot->next, last);
+    }
+
+    if (pivot != NULL && first != pivot) {
+        quick_sort(l, first, pivot);
+    }
+}
+
 
 void list_insert(list *l, char *new_data, int k){
     element *new_node = malloc(sizeof(element));
@@ -303,7 +352,6 @@ void list_insert_inOrder(list *l, char *new_data, int k){
         new_node->prev = NULL;
         l->header = l->tailer = new_node;
         l->count++;
-        return ;
     }
 
     while(curr!=NULL && strcmp(curr->data, new_data)<0){
@@ -347,6 +395,11 @@ void delete_node_l(list *l, element *n){
 }
 
 void print_list(list *l){
+    if(l->ordered == 0){
+        quick_sort(l, l->header, l->tailer);
+        l->ordered = 1;
+    }
+
     element *curr = l->header;
 
     while (curr != NULL){
@@ -595,9 +648,10 @@ int play(RB *dic, int n, int k, int *found, char *r){
                 //if (strlen(s) != k) return -1;
 
                 char *s1 = RBinsert(dic, s, k);
-                if(passaFiltri(s, f_head, k))   list_insert_inOrder(l_filtered, s1, k);
-            }
+                if(passaFiltri(s, f_head, k))   list_insert(l_filtered, s1, k);
 
+            }
+            l_filtered->ordered = 0;
 
             if (debug) {
                 printf("\nParole ammissibili\n");
@@ -750,3 +804,4 @@ int main() {
     //free(dic);
     return 0;
 }
+
