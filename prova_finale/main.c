@@ -2,25 +2,15 @@
 #include <stdlib.h>
 //#include <string.h>
 
+#define MAX_LENGTH 1024
 #define RED 0
 #define BLACK 1
 
-#define debug 0
+static unsigned char partita;
+static int count;
+static int countFilt;
 
-typedef struct n{
-    char *key;
-    int color;
-    struct n *p;
-    struct n *left;
-    struct n *right;
-}node;
-
-typedef struct{
-    node *root;
-    node *NIL;
-}RB;
-
-char* strcpy(char* destination, const char* source){
+static inline char* strcpy(char* destination, const char* source){
     /* return if no memory is allocated to the destination
     if (destination == NULL) {
         return NULL;
@@ -43,7 +33,7 @@ char* strcpy(char* destination, const char* source){
     return ptr;
 }
 
-int strcmp(const char *X, const char *Y){
+static inline int strcmp(const char *X, const char *Y){
     while (*X){
         // se i caratteri differiscono o viene raggiunta la fine della seconda stringa
         if (*X != *Y) {
@@ -54,12 +44,26 @@ int strcmp(const char *X, const char *Y){
         X++;
         Y++;
     }
-
     // restituisce la differenza ASCII dopo aver convertito `char*` in `unsigned char*`
     return *(const unsigned char*)X - *(const unsigned char*)Y;
 }
 
-void init(RB* T){
+typedef struct n{
+    char *key;
+    char color;
+    unsigned char partita;
+    struct n *p;
+    struct n *left;
+    struct n *right;
+}node;
+
+typedef struct{
+    node *root;
+    node *NIL;
+}RB;
+
+static inline void init(RB* T){
+    T->NIL = malloc(sizeof (node));
     T->NIL->color = BLACK;
     T->root = T->NIL;
     T->root->p = T->NIL;
@@ -112,6 +116,15 @@ void inorderWalk(RB* T, node *x){
         inorderWalk(T, x->left);
         printf("%s\n", x->key);
         inorderWalk(T, x->right);
+    }
+}
+
+void stampaFiltrate(RB* T, node *x){
+    if(x != T->NIL){
+        stampaFiltrate(T, x->left);
+        if(x->partita <= partita)
+            printf("%s\n", x->key);
+        stampaFiltrate(T, x->right);
     }
 }
 
@@ -183,13 +196,13 @@ void RBinsert_fixup(RB *T, node *z){
     T->root->color = BLACK;
 }
 
-char* RBinsert(RB *T, char* key, int k){
+node* RBinsert(RB *T, char* key, int k){
     node *z, *x, *y;
     z = malloc(sizeof(node));
     z->key = malloc(sizeof(char)*(k+1));
 
-    if(strcpy(z->key,key)==NULL)   //z->key = key
-        exit(0) ;
+    strcpy(z->key,key);   //z->key = key
+    z->partita = partita;
     z->color = RED;
     z->left = T->NIL;
     z->right = T->NIL;
@@ -199,7 +212,7 @@ char* RBinsert(RB *T, char* key, int k){
 
     while(x != T->NIL){
         y = x;
-        if(strcmp(z->key,x->key)==0)     return x->key;
+        if(strcmp(z->key,x->key)==0)     return x;
         else if(strcmp(z->key,x->key)<0) //z->key < x->key
             x = x->left;
         else
@@ -217,17 +230,14 @@ char* RBinsert(RB *T, char* key, int k){
 
     RBinsert_fixup(T, z);
 
-    return z->key;
+    return z;
 }
 
-typedef struct{
+typedef struct f{
+    //filter_element * element;
     int index;
     char ch_s;
     char symb;
-}filter_element;
-
-typedef struct f{
-    filter_element * element;
     struct f *right;
     //struct f *left;
 }filtro;
@@ -241,7 +251,7 @@ typedef struct {
     listaFiltri *header;
 } headerFilt;
 
-void filt_insert(headerFilt *hf, filtro *new_data){
+static inline void filt_insert(headerFilt *hf, filtro *new_data){
     listaFiltri *new_node = malloc(sizeof(listaFiltri));
 
     new_node->data = new_data;
@@ -249,194 +259,14 @@ void filt_insert(headerFilt *hf, filtro *new_data){
     hf->header = new_node;
 }
 
-typedef struct node_l {
-    char *data;
-    struct node_l *prev;
-    struct node_l *next;
-} element;
-
-typedef struct {
-    int ordered;
-    // tiene traccia di quanti nodi sono presenti all'interno della lista
-    int count;
-    // puntatore al primo nodo della lista
-    element *header;
-    // puntatore all'ultimo nodo della lista
-    element *tailer;
-} list;
-
-void init_list(list *l) {
-    l->ordered = 0;
-    l->count = 0;
-    l->header = l->tailer = NULL;
-}
-
-// We are Setting the given last node position to its proper position
-element* parition(list *l, element* first, element* last) {
-    // Get first node of given linked list
-    char *temp;
-    element* pivot = first;
-    element* front = first;
-    while (front != NULL && front != last) {
-        if (strcmp(front->data, last->data) < 0) {   //(front->data < last->data)
-            pivot = first;
-
-            // Swapping  node values
-            temp = first->data;
-            first->data = front->data;
-            front->data = temp;
-
-            // Visiting the next node
-            first = first->next;
-        }
-
-        // Visiting the next node
-        front = front->next;
-    }
-
-    // Change last node value to current node
-    temp = first->data;
-    first->data = last->data;
-    last->data = temp;
-    return pivot;
-}
-
-// Performing quick sort in  the given linked list
-void quick_sort(list *l, element * first, element * last) {
-    if (first == last) {
-        return;
-    }
-    element * pivot = parition(l, first, last);
-
-    if (pivot != NULL && pivot->next != NULL) {
-        quick_sort(l, pivot->next, last);
-    }
-
-    if (pivot != NULL && first != pivot) {
-        quick_sort(l, first, pivot);
-    }
-}
-
-
-void list_insert(list *l, char *new_data, int k){
-    element *new_node = malloc(sizeof(element));
-    // new_node->data = malloc(sizeof(char)*(k+1));
-
-    new_node->data = new_data;
-    // strcpy(new_node->data, new_data);
-    new_node->next = NULL;
-    new_node->prev = NULL;
-
-    if (l->count == 0) {
-        new_node->prev = NULL;
-        l->header = l->tailer = new_node;
-    } else {
-        new_node->prev = l->tailer;
-        l->tailer->next = new_node;
-        l->tailer = new_node;
-    }
-
-    l->count++;
-}
-
-void list_insert_inOrder(list *l, char *new_data, int k){
-    element *curr = l->header;
-    element *new_node = malloc(sizeof(element));
-    new_node->data = malloc(sizeof(char)*(k+1));
-
-    strcpy(new_node->data, new_data);
-    new_node->next = NULL;
-    new_node->prev = NULL;
-
-    if (l->count == 0) {
-        new_node->prev = NULL;
-        l->header = l->tailer = new_node;
-        l->count++;
-    }
-
-    while(curr!=NULL && strcmp(curr->data, new_data)<0){
-        curr = curr->next;
-    }
-
-    if(curr == NULL) {
-        new_node->prev = l->tailer;
-        l->tailer->next = new_node;
-        l->tailer = new_node;
-    } else {
-        if (curr == l->header) {
-            new_node->prev = NULL;
-            new_node->next = curr;
-            curr->prev = new_node;
-            l->header = new_node;
-        } else {
-            curr->prev->next = new_node;
-            new_node->prev = curr->prev;
-            new_node->next = curr;
-            curr->prev = new_node;
-        }
-    }
-
-    l->count++;
-}
-
-void delete_node_l(list *l, element *n){
-    if(l->header == n)
-        l->header = n->next;
-    if(l->tailer == n)
-        l->tailer = n->prev;
-
-    if (n->prev != NULL)
-        n->prev->next = n->next;
-    if (n->next != NULL)
-        n->next->prev = n->prev;
-
-    free(n);
-    l->count--;
-}
-
-void print_list(list *l){
-    if(l->ordered == 0){
-        quick_sort(l, l->header, l->tailer);
-        l->ordered = 1;
-    }
-
-    element *curr = l->header;
-
-    while (curr != NULL){
-        //printf("%s\n", curr->data);
-        puts(curr->data);
-        curr = curr->next;
-    }
-}
-
-/* void free_list(list *l){
-    element *curr = l->header, *next;
-
-    while (curr != NULL){
-        next = curr->next;
-        // free(curr->data);
-        free(curr);
-        curr = next;
-    }
-} */
-
-void RBcopy(RB* Ts, node *source, list *l, int k){
-    if(source != Ts->NIL){
-        RBcopy(Ts, source->left, l, k);
-        list_insert(l, source->key, k);
-        RBcopy(Ts, source->right, l, k);
-    }
-}
-
-filtro *genera_filtro (char* s, char* r, int k){
+static inline filtro *genera_filtro (char* s, char* r, int k){
     filtro *f = malloc(sizeof(filtro));
     filtro *previous=f /*= malloc(sizeof(filtro))*/;
 
     for(int i=0; i<k; i++){
         filtro* current = malloc(sizeof(filtro));
-        filter_element *e = malloc(sizeof(filter_element));
-        e->index = i;
-        e->ch_s = s[i];
+        current->index = i;
+        current->ch_s = s[i];
 
         // logica per calcolare symb
         int countCharR = 0, countMatchedS = 0, countNotMatchedBeforeS = 0;
@@ -452,15 +282,14 @@ filtro *genera_filtro (char* s, char* r, int k){
         }
 
         if (s[i] == r[i])
-            e->symb = '+';
+            current->symb = '+';
         else {
             if (countCharR == 0 || (countNotMatchedBeforeS >= countCharR - countMatchedS))
-                e->symb ='/';
+                current->symb ='/';
             else
-                e->symb ='|';
+                current->symb ='|';
         }
 
-        current->element = e;
         current->right = NULL;
         //current->left = NULL;
         if(i == 0){
@@ -474,47 +303,24 @@ filtro *genera_filtro (char* s, char* r, int k){
     return f;
 }
 
-void stampa_filtro(filtro *f){
+static inline void stampa_filtro(filtro *f){
     filtro *current=f;
     while(current != NULL){
         //printf("%c", current->element->symb);
-        putc(current->element->symb, stdout);
+        putc(current->symb, stdout);
         current = current->right;
     }
     printf("\n");
-
 }
 
-/* void free_filtro(filtro *f){
-    filtro *current=f, *next;
-
-    while(current != NULL){
-        next = current->right;
-        free(current->element);
-        free(current);
-        current = next;
-    }
-}
-
-void free_lfiltri(listaFiltri *lf){
-    listaFiltri *current=lf, *next;
-
-    while(current != NULL){
-        next = current->next;
-        free_filtro(current->data);
-        free(current);
-        current = next;
-    }
-} */
-
-int eliminaFilt_pipe(int index, char ch_s, char *s, filtro *f_header, int k){
+static inline int eliminaFilt_pipe(int index, char ch_s, char *s, filtro *f_header, int k){
     if(s[index] == ch_s)    return 1;
 
     filtro *fe = f_header;
     int cont_occ=0;
     for(int i=0; i<k; i++){
         if(s[i] == ch_s) {
-            if(fe->element->ch_s != ch_s)
+            if(fe->ch_s != ch_s)
                 cont_occ ++;
         }
         fe = fe->right;
@@ -523,16 +329,18 @@ int eliminaFilt_pipe(int index, char ch_s, char *s, filtro *f_header, int k){
     return 0;
 }
 
-int eliminaFilt_slash(int index, char ch_s, char *s, filtro *f_header, int k){
+static inline int eliminaFilt_slash(int index, char ch_s, char *s, filtro *f_header, int k){
+    if(s[index] == ch_s)    return 1;
+
     int cont_occ_s=0, cont_occ_f=0;
     filtro *fe = f_header;
 
     for(int i=0; i<k; i++){
         if(s[i] == ch_s)
             cont_occ_s ++;
-        if(fe->element->ch_s == ch_s && fe->element->symb == '+')
+        if(fe->ch_s == ch_s && fe->symb == '+')
             cont_occ_f ++;
-        if(fe->element->ch_s == ch_s && fe->element->symb == '|')
+        if(fe->ch_s == ch_s && fe->symb == '|')
             cont_occ_f ++;
 
         fe = fe->right;
@@ -541,62 +349,55 @@ int eliminaFilt_slash(int index, char ch_s, char *s, filtro *f_header, int k){
     return 0;
 }
 
-void filtra_dic( list *l_filtered, filtro *f, int k){
-    filtro *current = f;
+static inline void filtra_dic( RB* T, node *x, filtro *f, int k){
 
-    while(current != NULL){
-        element *cur_node = l_filtered->header;
-        while(cur_node != NULL){
-            if(current->element->symb == '+'){
-                if(cur_node->data[current->element->index] != current->element->ch_s){
-                    element *nodeToRemove = cur_node;
-                    cur_node = cur_node->next;
-
-                    delete_node_l(l_filtered, nodeToRemove);
-                    continue;
+    if(x != T->NIL){
+        filtra_dic(T, x->left, f, k);
+        if(x->partita <= partita) {
+            filtro *current = f;
+            while (current != NULL) {
+                if (current->symb == '+') {
+                    if (x->key[current->index] != current->ch_s) {
+                        x->partita = (char)(partita+1);
+                        countFilt--;
+                        break;
+                    }
+                } else if (current->symb == '/') {
+                    if (eliminaFilt_slash(current->index, current->ch_s, x->key, f, k)) {
+                        x->partita = (char)(partita+1);
+                        countFilt--;
+                        break;
+                    }
+                } else if (current->symb == '|') {
+                    if (eliminaFilt_pipe(current->index, current->ch_s, x->key, f, k)) {
+                        x->partita = (char)(partita+1);
+                        countFilt--;
+                        break;
+                    }
                 }
+                current = current->right;
             }
-            else if(current->element->symb == '/') {
-                if (eliminaFilt_slash(current->element->index, current->element->ch_s, cur_node->data, f, k)) {
-                    element *nodeToRemove = cur_node;
-                    cur_node = cur_node->next;
-
-                    delete_node_l(l_filtered, nodeToRemove);
-                    continue;
-                }
-            }
-            else if(current->element->symb == '|') {
-                if (eliminaFilt_pipe(current->element->index, current->element->ch_s, cur_node->data, f, k)) {
-                    element *nodeToRemove = cur_node;
-                    cur_node = cur_node->next;
-
-                    delete_node_l(l_filtered, nodeToRemove);
-                    continue;
-                }
-            }
-
-            cur_node = cur_node->next;
         }
-        current = current->right;
+        filtra_dic(T, x->right, f, k);
     }
 }
 
-int filtra_el(char *data, filtro *f, int k){
+static inline int filtra_el(char *data, filtro *f, int k){
     filtro *current = f;
 
     while(current != NULL){
-        if(current->element->symb == '+'){
-            if(data[current->element->index] != current->element->ch_s){
+        if(current->symb == '+'){
+            if(data[current->index] != current->ch_s){
                 return 1;
             }
         }
-        else if(current->element->symb == '/') {
-            if (eliminaFilt_slash(current->element->index, current->element->ch_s, data, f, k)) {
+        else if(current->symb == '/') {
+            if (eliminaFilt_slash(current->index,current->ch_s, data, f, k)) {
                 return 1;
             }
         }
-        else if(current->element->symb == '|') {
-            if (eliminaFilt_pipe(current->element->index, current->element->ch_s, data, f, k)) {
+        else if(current->symb == '|') {
+            if (eliminaFilt_pipe(current->index, current->ch_s, data, f, k)) {
                 return 1;
             }
         }
@@ -605,78 +406,88 @@ int filtra_el(char *data, filtro *f, int k){
     return 0;
 }
 
-int passaFiltri(char *new_data, headerFilt *f_head, int k){
+static inline void passaFiltri(node *new, headerFilt *f_head, int k){
     listaFiltri *curr = f_head->header;
 
     while(curr != NULL){
-        if(filtra_el(new_data, curr->data, k))  return 0;   //non devo inserire un nuovo nodo
+        if(filtra_el(new->key, curr->data, k)) {    //non devo inserire un nuovo nodo in filtrate
+            new->partita = (unsigned char) (partita + 1);
+            return;
+        }
         curr = curr->next;
     }
-    return 1;   //nuovo nodo da inserire
+    //nuovo nodo da inserire
+    countFilt++;
+}
+
+void free_filtro(filtro *f){
+    filtro *current=f, *next;
+
+    while(current != NULL){
+        next = current->right;
+        free(current);
+        current = next;
+    }
+}
+
+void free_lfiltri(headerFilt *headerF){
+    listaFiltri *current=headerF->header, *next;
+
+    while(current != NULL){
+        next = current->next;
+        free_filtro(current->data);
+        free(current);
+        current = next;
+    }
+    free(headerF);
 }
 
 int play(RB *dic, int n, int k, int *found, char *r){
-    char s[k+1];
-    list *l_filtered = malloc(sizeof(list));
-    init_list(l_filtered);
+    countFilt = count;
+    char s[MAX_LENGTH];
     headerFilt *f_head = malloc(sizeof(headerFilt));
     f_head->header = NULL;
-
-    RBcopy(dic, dic->root, l_filtered, k);
-    if (debug) {
-        printf("Prima stampa filtrate list\n");
-        print_list(l_filtered);
-    }
 
     while (n > 0) {
         if (fscanf(stdin, "%s", s) == 0) return -1;
 
         if (strcmp(s, "+stampa_filtrate") == 0) {
-            if (debug) {
-                printf("Stampa filtrate\n");
-            }
-            print_list(l_filtered);
+            stampaFiltrate(dic, dic->root);
         }
         else if (strcmp(s, "+inserisci_inizio") == 0) {
-            if (debug) {
-                printf("\nNuove parole ammissibili\n");
-            }
             while (1) {
                 if (fscanf(stdin, "%s", s) == 0) return -1;
                 if (strcmp(s, "+inserisci_fine") == 0) break;
+                if (strcmp(s, "+stampa_filtrate") == 0) {
+                    stampaFiltrate(dic, dic->root);
+                    continue;
+                }
 
-                //if (strlen(s) != k) return -1;
-
-                char *s1 = RBinsert(dic, s, k);
-                if(passaFiltri(s, f_head, k))   list_insert(l_filtered, s1, k);
-
-            }
-            l_filtered->ordered = 0;
-
-            if (debug) {
-                printf("\nParole ammissibili\n");
-                inorderWalk(dic, dic->root);
-                printf("\n");
-                printf("Parole filtrate\n");
-                print_list(l_filtered);
+                node *new = RBinsert(dic, s, k);
+                count++;
+                passaFiltri(new, f_head, k);
             }
         }
+        else if(strcmp(s, "+nuova_partita")==0) {
+            *found = 0;
+            partita++;
+            free_lfiltri(f_head);
+
+            if( fscanf (stdin, "%s",r)==0 )    return -1;
+            if( fscanf (stdin, "%d",&n)==0 )    return -1;
+
+            countFilt = count;
+            f_head = malloc(sizeof(headerFilt));
+            f_head->header = NULL;
+            continue;
+        }
         else {
-            if (debug) {
-                printf("\nStampo output\n");
-            }
-
-            //if (strlen(s) != k) return -1;
-
             if (RBsearch(dic, s) == dic->NIL) {
                 fprintf(stdout, "%s", "not_exists\n");
                 //continue;
             }
             else {
                 n = n-1;
-                if (debug) {
-                    printf("\nn=%d\n", n);
-                }
 
                 if (strcmp(s, r) == 0) {
                     fprintf(stdout, "%s", "ok\n");
@@ -687,31 +498,24 @@ int play(RB *dic, int n, int k, int *found, char *r){
                     filt_insert(f_head, f);
                     stampa_filtro(f);
 
-                    filtra_dic(l_filtered, f, k);
-
-                    printf("%d\n", l_filtered->count);
-
-                    if(debug){
-                        printf("\nParole filtrate lista: ");
-                        print_list(l_filtered);
-                    }
+                    filtra_dic(dic, dic->root, f, k);
+                    printf("%d\n", countFilt);
                 }
             }
         }
     }
 
-    //free_lfiltri(f_head->header);
-    //free(f_head);
-    //free_list(l_filtered);
-    //free(l_filtered);
+    partita++;
+    free_lfiltri(f_head);
     return 0;
 }
 
 int main() {
+    partita = (unsigned char)0;
+    count = 0;
     int k, found=0;
-    char s[25];
-    RB * dic = malloc(sizeof(RB));
-    dic->NIL = malloc(sizeof(node));
+    char s[MAX_LENGTH];
+    RB *dic = malloc(sizeof(RB));
     init(dic);
 
     //leggo k = lunghezza delle parole
@@ -720,17 +524,31 @@ int main() {
 
     //il sistema legge una sequenza (di lunghezza arbitraria) di parole, ognuna di lunghezza k, che costituisce l'insieme delle parole ammissibili
     while(1){
-        if( fscanf (stdin, "%s",s)==0 )    return -1;
+        if (fscanf(stdin, "%s", s) == EOF){
+            exit(0);
+        }
         if(strcmp(s, "+nuova_partita")==0)  break;
-        //if(strlen(s)!=k)    return -1;
+        if (strcmp(s, "+inserisci_inizio") == 0) {
+            while (1) {
+                if (fscanf(stdin, "%s", s) == 0) return -1;
+                if (strcmp(s, "+inserisci_fine") == 0) break;
+                if (strcmp(s, "+stampa_filtrate") == 0) {
+                    inorderWalk(dic, dic->root);
+                    continue;
+                }
+
+                RBinsert(dic, s, k);
+                count++;
+            }
+            continue;
+        }
+        if (strcmp(s, "+stampa_filtrate") == 0) {
+            inorderWalk(dic, dic->root);
+            continue;
+        }
 
         RBinsert(dic, s, k);
-    }
-
-    if(debug){
-        printf("\nParole ammissibili\n");
-        inorderWalk(dic, dic->root);
-        printf("\n");
+        count++;
     }
 
     //r = parola di riferimento (di lunghezza k caratteri)
@@ -741,13 +559,8 @@ int main() {
     if( fscanf (stdin, "%d",&n)==0 )    return -1;
 
     while(n!=0) {
-
         if(play(dic, n, k, &found, r)!=0)
             printf("\nERRORE!");
-
-        if (debug) {
-            printf("\nFine partita\n");
-        }
 
         if (found == 0)
             fprintf(stdout, "%s", "ko\n");
@@ -755,35 +568,27 @@ int main() {
         //una partita è stata finita
         while(1){
             if (fscanf(stdin, "%s", s) == EOF){
-                n=0;
-                break;
-            }
-            if (debug) {
-                printf("\nStringa in ingresso: %s\n", s);
+                exit(0);
             }
 
             if (strcmp(s, "+inserisci_inizio") == 0) {
-                if (debug) {
-                    printf("\nNuove parole ammissibili\n");
-                }
                 while (1) {
                     if (fscanf(stdin, "%s", s) == 0) return -1;
                     if (strcmp(s, "+inserisci_fine") == 0) break;
-                    //if (strlen(s) != k) return -1;
+                    if (strcmp(s, "+stampa_filtrate") == 0) {
+                        inorderWalk(dic, dic->root);
+                        continue;
+                    }
 
                     RBinsert(dic, s, k);
+                    count++;
                 }
-
-                if (debug) {
-                    printf("\nParole ammissibili\n");
-                    inorderWalk(dic, dic->root);
-                    printf("\n");
-                }
+            }
+            else if (strcmp(s, "+stampa_filtrate") == 0) {
+                inorderWalk(dic, dic->root);
             }
             else if(strcmp(s, "+nuova_partita") == 0){
                 found=0;
-                if (debug)
-                    printf("\nNuova partita\n");
 
                 if( fscanf (stdin, "%s",r)==0 )    return -1;
                 if( fscanf (stdin, "%d",&n)==0 )    return -1;
@@ -791,17 +596,12 @@ int main() {
                 break;
             }
             else{
-                n=0;
-                if (debug) {
-                    printf("\ns prima break: %s\n", s);
-                }
-                break;
+                exit(0);
             }
         }
     }
 
-    //free(dic->NIL);
-    //free(dic);
     return 0;
 }
+
 
