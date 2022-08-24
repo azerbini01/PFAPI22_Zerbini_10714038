@@ -107,7 +107,7 @@ inline static int test_bit_set_bit(unsigned char * buf, unsigned int x, int set_
     if (c & mask) {
         return 1;
     } else {
-        if (set_bit) {
+        if (set_bit) {  //bloom_add
             buf[byte] = c | mask;
         }
         return 0;
